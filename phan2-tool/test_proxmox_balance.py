@@ -145,6 +145,95 @@ class TestLoadSnapshot(unittest.TestCase):
         self.assertFalse(nodes["n1"].is_eligible_target)
 
 
+class TestVmidHandling(unittest.TestCase):
+    """Bản ghi thiếu vmid và vmid trùng lặp giữa các node."""
+
+    def test_skip_vm_missing_vmid(self):
+        path = _write_json({
+            "nodes": [_node("n1")],
+            "vms": [{"name": "no_vmid", "node": "n1", "status": "running",
+                     "vcpus": 2, "cpu_usage": 0.1,
+                     "mem_used": 1, "mem_max": 2}],
+        })
+        _, vms, warnings = load_snapshot(path)
+        self.assertEqual(len(vms), 0)
+        self.assertTrue(any("vmid" in w for w in warnings))
+
+    def test_duplicate_vmid_counted_once(self):
+        """Cùng vmid trên 2 node: chỉ tính 1 lần, cảnh báo, đánh dấu mơ hồ."""
+        path = _write_json({
+            "nodes": [_node("n1"), _node("n2")],
+            "vms": [_vm(1, node="n1", vcpus=4, mem_used=10 * GB),
+                    _vm(1, node="n2", vcpus=4, mem_used=10 * GB)],
+        })
+        nodes, vms, warnings = load_snapshot(path)
+        self.assertEqual(len(vms), 1)
+        self.assertEqual(nodes["n1"].mem_used, 10 * GB)
+        self.assertEqual(nodes["n2"].mem_used, 0)
+        self.assertEqual(nodes["n2"].vcpu_allocated, 0)
+        # tổng toàn cluster chỉ bằng 1 VM, không bị cộng đôi
+        self.assertEqual(sum(n.mem_used for n in nodes.values()), 10 * GB)
+        self.assertEqual(sum(n.vcpu_allocated for n in nodes.values()), 4)
+        dup = [w for w in warnings if "nhiều lần" in w]
+        self.assertEqual(len(dup), 1)
+        self.assertIn("vmid=1", dup[0])
+        self.assertIn("giống hệt", dup[0])
+        self.assertTrue(vms[0].ambiguous)
+
+    def test_duplicate_vmid_different_content_warns(self):
+        path = _write_json({
+            "nodes": [_node("n1"), _node("n2")],
+            "vms": [_vm(1, node="n1", mem_used=10 * GB),
+                    _vm(1, node="n2", mem_used=12 * GB)],
+        })
+        nodes, _, warnings = load_snapshot(path)
+        self.assertTrue(any("KHÁC NHAU" in w for w in warnings))
+        # vẫn giữ bản ghi xuất hiện trước
+        self.assertEqual(nodes["n1"].mem_used, 10 * GB)
+        self.assertEqual(nodes["n2"].mem_used, 0)
+
+    def test_duplicate_prefers_running_record(self):
+        """Nếu một bản ghi stopped, một running: giữ bản running."""
+        path = _write_json({
+            "nodes": [_node("n1"), _node("n2")],
+            "vms": [_vm(1, node="n1", mem_used=10 * GB, status="stopped"),
+                    _vm(1, node="n2", mem_used=10 * GB, status="running")],
+        })
+        nodes, vms, _ = load_snapshot(path)
+        self.assertEqual(len(vms), 1)
+        self.assertEqual(nodes["n1"].mem_used, 0)
+        self.assertEqual(nodes["n2"].mem_used, 10 * GB)
+
+    def test_duplicate_vmid_same_node_counted_once(self):
+        path = _write_json({
+            "nodes": [_node("n1")],
+            "vms": [_vm(1, node="n1", mem_used=10 * GB),
+                    _vm(1, node="n1", mem_used=10 * GB)],
+        })
+        nodes, vms, warnings = load_snapshot(path)
+        self.assertEqual(len(vms), 1)
+        self.assertEqual(nodes["n1"].mem_used, 10 * GB)
+        self.assertTrue(any("nhiều lần" in w for w in warnings))
+
+    def test_ambiguous_vm_never_migrated(self):
+        """VM trùng vmid không được đề xuất migrate, dù là VM lớn nhất."""
+        path = _write_json({
+            "nodes": [_node("n1", mem=100 * GB), _node("n2", mem=100 * GB)],
+            "vms": [
+                _vm(1, node="n1", mem_used=60 * GB, mem_max=64 * GB),
+                _vm(1, node="n2", mem_used=60 * GB, mem_max=64 * GB),  # bản trùng
+                _vm(2, node="n1", mem_used=30 * GB, mem_max=64 * GB),  # n1 = 90%
+            ],
+        })
+        nodes, _, _ = load_snapshot(path)
+        analyze(nodes, 80, 85, 4.0)
+        self.assertTrue(nodes["n1"].is_overloaded)
+        migrations = plan_migrations(nodes, 80, 85, 4.0)
+        self.assertTrue(all(m.vmid != 1 for m in migrations))
+        self.assertEqual([m.vmid for m in migrations], [2])
+        self.assertFalse(nodes["n1"].is_overloaded)
+
+
 class TestAnalyze(unittest.TestCase):
 
     def test_high_mem_marks_overloaded(self):
