@@ -76,7 +76,7 @@ Ghi mốc thời gian từng phiên, giả định, các bước dùng AI và vi
 - Node `hcm-c3-n06` có `mem_total=262144` coi là dữ liệu nghi hỏng (có thể exporter xuất sai đơn vị, nếu là MiB thì đúng 256 GiB), không làm node nguồn hay đích.
 - Ngưỡng 80% CPU / 85% RAM / 4x overcommit chọn theo kinh nghiệm chung, chưa hiệu chỉnh bằng dữ liệu thật.
 - VM `stopped` không tính vào tải; node `offline` không nhận VM.
-- Snapshot có `vmid` 2001 xuất hiện trên cả `hcm-c3-n01` và `hcm-c3-n02`; tool chưa xử lý trường hợp trùng.
+- Snapshot có `vmid` 2001 xuất hiện trên cả `hcm-c3-n01` và `hcm-c3-n02` (hai bản ghi giống hệt, chỉ khác node). Ban đầu tool cộng tải VM này vào cả hai node. Sau yêu cầu của anh Tuấn, tool phát hiện và cảnh báo, chỉ tính 1 lần (ưu tiên bản ghi `running`, nếu cùng trạng thái thì giữ bản xuất hiện trước) và không đề xuất migrate VM này vì không biết vị trí thật của nó. Lý do và đánh đổi được ghi trong phan2-tool.md.
 
 **Phần 3**
 - LB (`lb-hcm-01`) là L7 vì có access log HTTP ở Phần 1.
