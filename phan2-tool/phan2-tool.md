@@ -32,8 +32,6 @@ python3 -m unittest test_proxmox_balance -v
 python3 generate_readme.py
 ```
 
-Mã thoát: `0` khi chạy thành công, `1` khi lỗi đầu vào (file không tồn tại, JSON hỏng, root không phải object). Thông báo lỗi in ra stderr.
-
 ## Ngưỡng đánh giá & giả định
 
 | Ngưỡng | Mặc định | Lý do |
