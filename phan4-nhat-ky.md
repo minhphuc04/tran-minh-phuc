@@ -61,7 +61,7 @@ Anh Tuấn góp ý: nhật ký ghi tool chưa xử lý `vmid` 2001 xuất hiện
 
 | Thời điểm | Thời lượng | Làm phần nào | Ghi chú |
 |---|---|---|---|
-| 03/11 | [điền] | Phần 2: bổ sung xử lý `vmid` trùng | Sửa `proxmox_balance.py` (phát hiện, cảnh báo, chỉ tính 1 lần, không đề xuất migrate VM trùng); thêm 6 test (tổng 32 test, trong đó có test cho VM thiếu `vmid` trước đó chưa có); sinh lại README bằng output thật. Chạy lại tool trên dữ liệu thật: `hcm-c3-n02` từ RAM 59,7% còn 55,0% và vCPU 92 còn 80, kế hoạch ở ngưỡng mặc định không đổi. Các mục trên của nhật ký không thay đổi, tổng thời gian ở đầu chưa gồm thời gian cập nhật này. |
+| 03/11 | [điền] | Phần 2: bổ sung xử lý `vmid` trùng | Sửa `proxmox_balance.py` (phát hiện, cảnh báo, chỉ tính 1 lần, không đề xuất migrate VM trùng); thêm 6 test (tổng 32 test, trong đó có test cho VM thiếu `vmid` trước đó chưa có). Chạy lại tool trên dữ liệu thật: `hcm-c3-n02` từ RAM 59,7% còn 55,0% và vCPU 92 còn 80, kế hoạch ở ngưỡng mặc định không đổi. 
 ## Phần chưa xong hoặc chưa hài lòng
 
 - **Phần 1:** tốc độ ghi `access.log` (~6 GB/ngày) cao hơn nhiều so với lưu lượng thấy trong log LB; cần đọc `access.log` thật để biết vhost/IP nào ghi nhiều. Các lệnh khắc phục chưa chạy trên máy thật.
