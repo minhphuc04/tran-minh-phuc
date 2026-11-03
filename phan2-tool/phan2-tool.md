@@ -5,8 +5,6 @@ kế hoạch live-migrate VM để cân bằng tài nguyên.
 
 Viết bằng **Python 3.10+**, **không cần dependency ngoài** (chỉ stdlib).
 
-> README này do `generate_readme.py` sinh ra bằng cách chạy thật tool và unit test (Python 3.14.6); mọi output bên dưới là output thật, không soạn tay.
-
 ## Cài đặt
 
 ```bash
