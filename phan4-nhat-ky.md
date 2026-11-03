@@ -19,6 +19,14 @@
 | 28/10 | ~15 phút | Phần 3: sửa log format để đếm `REJECTED_DRY_RUN` | Ban đầu grep ra 0 do log format chưa có `$limit_req_status`; thêm `log_format` và `access_log`, chạy lại dry-run 10 giây, thu được 883/888 request |
 | 29/10 tối | ~1 giờ | Phần 4: nhật ký. Xem lại những phần đã note để bổ sung vào nhật ký | Do các phần được làm/ điều chỉnh ở các ngày khác nhau dẫn đến nhiều phần bị quên nên nhật kí sẽ không đầy đủ như thực tế|
 
+## Phần cập nhật theo góp ý của anh Tuấn:
+
+Anh Tuấn góp ý: nhật ký ghi tool chưa xử lý `vmid` 2001 xuất hiện trên cả `hcm-c3-n01` và `hcm-c3-n02`, tool đang cộng tải VM này vào cả hai node. Yêu cầu: phát hiện, cảnh báo, không tính một VM hai lần, tự chọn cách xử lý và ghi lý do trong README, kèm test.
+
+| Thời điểm | Thời lượng | Làm phần nào | Ghi chú |
+|---|---|---|---|
+| 03/11 | [điền] | Phần 2: bổ sung xử lý `vmid` trùng | Sửa `proxmox_balance.py` (phát hiện, cảnh báo, chỉ tính 1 lần, không đề xuất migrate VM trùng); thêm 6 test (tổng 32 test, trong đó có test cho VM thiếu `vmid` trước đó chưa có). Chạy lại tool trên dữ liệu thật: `hcm-c3-n02` từ RAM 59,7% còn 55,0% và vCPU 92 còn 80, kế hoạch ở ngưỡng mặc định không đổi. 
+
 ## Giả định đã đặt ra
 
 **Phần 1**
@@ -55,13 +63,7 @@
 | Phần 3: viết nhận xét lab | Claude | Diễn giải ý nghĩa các con số (P99 giảm khoảng 8 lần, throughput ~11k là tốc độ từ chối) | Tự đọc lại output `wrk`, tự kiểm tra con số 883/888 và 352.681/352.986 khớp nhau |
 | Phần 3: sửa lỗi log format | Claude / DeepSeek | Thêm `log_format` có `$limit_req_status`, chạy lại dry-run | Tự chạy `sed`, tự `grep` xác nhận, tự chạy lại `wrk` 10 giây và đếm log |
 | Phần 3: trình bày | Claude | Điều chỉnh lại format Markdown, hỗ trợ phần nội dung và khung triển khai | Rà soát, đọc lại nội dung, kiểm chứng và đối chiếu với các tài liệu liên quan |
-## Cập nhật sau khi nộp (theo góp ý của anh Tuấn)
 
-Anh Tuấn góp ý: nhật ký ghi tool chưa xử lý `vmid` 2001 xuất hiện trên cả `hcm-c3-n01` và `hcm-c3-n02`, tool đang cộng tải VM này vào cả hai node. Yêu cầu: phát hiện, cảnh báo, không tính một VM hai lần, tự chọn cách xử lý và ghi lý do trong README, kèm test.
-
-| Thời điểm | Thời lượng | Làm phần nào | Ghi chú |
-|---|---|---|---|
-| 03/11 | [điền] | Phần 2: bổ sung xử lý `vmid` trùng | Sửa `proxmox_balance.py` (phát hiện, cảnh báo, chỉ tính 1 lần, không đề xuất migrate VM trùng); thêm 6 test (tổng 32 test, trong đó có test cho VM thiếu `vmid` trước đó chưa có). Chạy lại tool trên dữ liệu thật: `hcm-c3-n02` từ RAM 59,7% còn 55,0% và vCPU 92 còn 80, kế hoạch ở ngưỡng mặc định không đổi. 
 ## Phần chưa xong hoặc chưa hài lòng
 
 - **Phần 1:** tốc độ ghi `access.log` (~6 GB/ngày) cao hơn nhiều so với lưu lượng thấy trong log LB; cần đọc `access.log` thật để biết vhost/IP nào ghi nhiều. Các lệnh khắc phục chưa chạy trên máy thật.
