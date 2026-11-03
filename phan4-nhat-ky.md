@@ -60,7 +60,7 @@
 
 - **Phần 1:** tốc độ ghi `access.log` (~6 GB/ngày) cao hơn nhiều so với lưu lượng thấy trong log LB; cần đọc `access.log` thật để biết vhost/IP nào ghi nhiều. Các lệnh khắc phục chưa chạy trên máy thật.
 - **Phần 1:** request 5xx đầu tiên trong log LB có `rt=60.5s` ghi lúc 01:33:05, tức bắt đầu sớm hơn lỗi `tar` khoảng 1 phút; chưa giải thích được.
-- **Phần 2:** tool chưa phát hiện `vmid` trùng; chưa có test riêng cho VM thiếu `vmid` và ngưỡng biên. Greedy không tối ưu toàn cục và không tính chi phí migrate.
+- **Phần 2:** chưa có test riêng cho ngưỡng đúng bằng giá trị biên. Greedy không tối ưu toàn cục và không tính chi phí migrate. Với `vmid` trùng, tool chỉ chọn một bản ghi theo quy tắc cố định chứ không biết vị trí thật của VM, nên cần đối chiếu với Proxmox thật.
 - **Phần 3:** lab mới đo phía L7, chưa đo L4 (nftables) để có số liệu so sánh trực tiếp hai tầng. Nếu có thêm thời gian: thêm kịch bản nftables meter/limit rate chặn theo IP, so sánh Req/s, P99, CPU giữa L4-only / L7-only / L7+L4.
 - **Phần 3:** lab chỉ có 1 endpoint, chưa mô phỏng 40 vhost nên chưa kiểm chứng được "độ mịn theo khách hàng" (áp `limit_req` riêng từng vhost) trong thực tế.
 - **Phần 3:** chưa mô phỏng IP dùng chung/NAT để đo rủi ro chặn nhầm.
