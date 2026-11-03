@@ -501,10 +501,9 @@ Tool dùng **greedy worst-fit**:
 
 ```text
 phan2-tool/
-├── proxmox_balance.py        # tool chính (585 dòng)
-├── test_proxmox_balance.py   # 32 unit test (423 dòng)
-├── generate_readme.py        # sinh README này bằng output thật
-└── README.md                 # file này
+├── proxmox_balance.py        # tool chính 
+├── test_proxmox_balance.py   # 32 unit test      
+└── phan2-tool.md             # Báo cáo cho phần tool
 ```
 
 ## Hướng phát triển (ngoài phạm vi bài test)
