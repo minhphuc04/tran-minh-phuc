@@ -35,6 +35,8 @@ class VM:
     cpu_usage: float
     mem_max: int
     mem_used: int
+    # True khi vmid xuất hiện nhiều lần trong snapshot (vị trí thật của VM chưa rõ)
+    ambiguous: bool = False
 
     @property
     def cpu_used_cores(self) -> float:
@@ -181,6 +183,8 @@ def load_snapshot(path: str) -> tuple[dict[str, Node], list[VM], list[str]]:
         nodes[name] = node
 
     vms: list[VM] = []
+    seen_idx: dict[int, int] = {}          # vmid -> vị trí trong vms
+    seen_sig: dict[int, dict] = {}         # vmid -> nội dung bản ghi (bỏ trường node)
     for i, v in enumerate(raw.get("vms") or []):
         if not isinstance(v, dict):
             _warn(warnings, f"vms[{i}]: không phải object, bỏ qua")
@@ -245,6 +249,32 @@ def load_snapshot(path: str) -> tuple[dict[str, Node], list[VM], list[str]]:
             vcpus=vcpus_raw, cpu_usage=cpu_usage,
             mem_max=mem_max, mem_used=mem_used,
         )
+
+        # vmid là duy nhất trong cluster: một VM chỉ nằm trên MỘT node.
+        # Trùng vmid (snapshot lấy lúc đang migrate, bản ghi cũ, export lỗi...)
+        # -> chỉ tính 1 lần, cảnh báo, và không đề xuất migrate VM này.
+        sig = {k: val for k, val in v.items() if k != "node"}
+        if vmid in seen_idx:
+            kept = vms[seen_idx[vmid]]
+            identical = sig == seen_sig[vmid]
+            # ưu tiên bản ghi đang running; cùng trạng thái thì giữ bản xuất hiện trước
+            if vm.is_running and not kept.is_running:
+                vms[seen_idx[vmid]] = vm
+                seen_sig[vmid] = sig
+                keep, drop = vm, kept
+            else:
+                keep, drop = kept, vm
+            keep.ambiguous = True
+            _warn(
+                warnings,
+                f"vmid={vmid} ({name}): xuất hiện nhiều lần (node {kept.node} và "
+                f"{vm.node}), nội dung {'giống hệt' if identical else 'KHÁC NHAU'}; "
+                f"chỉ tính 1 lần theo bản ghi ở node {keep.node}, bỏ bản ghi ở node "
+                f"{drop.node}, không đề xuất migrate VM này",
+            )
+            continue
+        seen_idx[vmid] = len(vms)
+        seen_sig[vmid] = sig
         vms.append(vm)
 
         if node_name not in nodes:
@@ -358,7 +388,9 @@ def plan_migrations(nodes: dict[str, Node], cpu_thr: float, mem_thr: float,
     )
 
     for src in overloaded:
-        candidates = sorted(src.vms, key=lambda v: v.mem_used, reverse=True)
+        # VM trùng vmid (vị trí chưa rõ) không được đề xuất migrate
+        candidates = sorted((v for v in src.vms if not v.ambiguous),
+                            key=lambda v: v.mem_used, reverse=True)
         for vm in candidates:
             if not src.is_overloaded:
                 break
